@@ -13,8 +13,8 @@ console.log(port)
 
 //CUIDADO EN LA WHITELIST HAY QUE AÑADIR EL PUERTO QUE LLAMA DESDE EL FRONT
 var whitelist = [
-  "https://client-6sec.onrender.com",
-  "https://server-yo1g.onrender.com", 
+  "https://proyecto-personal-front.onrender.com", 
+  "https://proyecto-personal-back.onrender.com", 
   `http://localhost:${port}`, 
   "http://localhost:3000",
   "http://127.0.0.1:3001",
