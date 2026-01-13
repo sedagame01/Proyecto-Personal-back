@@ -2,6 +2,17 @@ const bcrypt = require("bcryptjs");
 const { findOne, anadir_usuario } = require("../models/auth.model");
 const { JWTGenerator } = require("../helpers/jwt");
 
+/**
+ * Registra un nuevo usuario en el sistema.
+ * Verifica duplicidad de email, encripta la contraseña y genera un token de acceso.
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} req.body - Cuerpo de la solicitud.
+ * @param {string} req.body.nombre - Nombre del usuario.
+ * @param {string} req.body.email - Correo electrónico del usuario.
+ * @param {string} req.body.contrasenia - Contraseña en texto plano.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @returns {Promise<void>} Retorna 200 con el token si es exitoso, 401 si ya existe, o 500 en error.
+ */
 const createUser = async (req, res) => {
     try {
         const { nombre, email, contrasenia } = req.body;
@@ -42,6 +53,15 @@ const createUser = async (req, res) => {
     }
 };
 
+/**
+ * Verifica email y contraseña, y retorna un nuevo token de acceso.
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} req.body - Cuerpo de la solicitud.
+ * @param {string} req.body.email - Correo electrónico registrado.
+ * @param {string} req.body.contrasenia - Contraseña del usuario.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @returns {Promise<void>} Retorna 200 con datos de usuario y token, 400/401 si falla la autenticación.
+ */
 const loginUser = async (req, res) => {
     try {
         const { email, contrasenia } = req.body;
@@ -89,6 +109,15 @@ const loginUser = async (req, res) => {
     }
 };
 
+/**
+ * Renueva el token de autenticación para un usuario ya validado.
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} req.userToken - Objeto inyectado por middleware de validación de token.
+ * @param {string|number} req.userToken.uid - ID del usuario.
+ * @param {string} req.userToken.rol - Rol del usuario.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @returns {Promise<void>} Retorna un nuevo token renovado.
+ */
 const renewToken = async (req, res) => {
     const { uid, rol } = req.userToken;
 

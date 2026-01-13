@@ -1,16 +1,60 @@
 const db = require('../config/db.js');
 const { userQuerys } = require('./user.querys.js');
 
+/**
+ * Obtiene la lista completa de destinos disponibles.
+ * @returns {Promise<Array<Object>>} Lista de todos los destinos.
+ */
+const getAllDestinos = async () => {
+    const { rows } = await db.query(userQuerys.getAllDestinos);
+    return rows;
+};
+
+/**
+ * Realiza una búsqueda de destinos basada en un término.
+ * @param {string} termino - Palabra clave para filtrar destinos.
+ * @returns {Promise<Array<Object>>} Lista de destinos que coinciden.
+ */
 const searchDestinos = async (termino) => {
     const { rows } = await db.query(userQuerys.buscarDestinos, [termino]);
     return rows;
 };
 
+/**
+ * Realiza una búsqueda de usuarios basada en un término.
+ * @param {string} termino - Palabra clave (nombre o email) para buscar.
+ * @returns {Promise<Array<Object>>} Lista de usuarios encontrados.
+ */
+const searchUsers = async (termino) => {
+    const { rows } = await db.query(userQuerys.buscarUsuarios, [termino]);
+    return rows;
+};
+
+/**
+ * Crea una nueva reseña en la base de datos.
+ * @param {string|number} userId - ID del usuario que crea la reseña.
+ * @param {string|number} targetId - ID de la entidad reseñada (destino, etc.).
+ * @param {string} targetType - Tipo de entidad (ej: 'destination').
+ * @param {string} comment - Texto de la reseña.
+ * @param {number} stars - Puntuación (1-5).
+ * @returns {Promise<Object>} La reseña creada.
+ */
 const postReview = async (userId, targetId, targetType, comment, stars) => {
     const { rows } = await db.query(userQuerys.crearReview, [userId, targetId, targetType, comment, stars]);
     return rows[0];
 };
 
+/**
+ * Registra una sugerencia de nuevo destino con estado 'pending'.
+ * @param {Object} datos - Datos del destino.
+ * @param {string} datos.name - Nombre del destino.
+ * @param {string} datos.description - Descripción.
+ * @param {string} datos.province - Provincia.
+ * @param {Array<string>} datos.images - URLs de imágenes.
+ * @param {boolean} datos.is_public - Visibilidad.
+ * @param {string|number} userId - ID del usuario creador.
+ * @returns {Promise<Object>} El destino creado.
+ */
 const sugerirDestino = async (datos, userId) => {
     const { name, description, province, images, is_public } = datos;
     const status = 'pending'; 
@@ -27,21 +71,20 @@ const sugerirDestino = async (datos, userId) => {
     return rows[0];
 };
 
-const searchUsers = async (termino) => {
-    const { rows } = await db.query(userQuerys.buscarUsuarios, [termino]);
-    return rows;
-};
-
-
+/**
+ * Gestiona la lógica de puntos y medallas de gamificación.
+ * Asigna puntos por envíos o aprobaciones y otorga medallas si se alcanzan los límites anuales.
+ * @param {string|number} userId - ID del usuario.
+ * @param {string} type - Tipo de acción ('submission' o 'approval').
+ * @returns {Promise<Object>} Resultado de la operación con los nuevos puntos y medallas.
+ */
 const addGamificationPoints = async (userId, type) => {
-    // Definición de reglas
     const POINTS_SUBMISSION = 10;
     const POINTS_APPROVAL = 50;
     const LIMIT_YEARLY = 10;
-    const MEDAL_VALUE = 100; // Puntos que vale tener una medalla al reiniciar
+    const MEDAL_VALUE = 100;
 
     try {
-        // 1. Obtener estado actual del usuario
         const { rows } = await db.query(
             'SELECT id, puntuaciontotal, submissions_count, approvals_count, medals FROM Users WHERE id = $1', 
             [userId]
@@ -51,15 +94,12 @@ const addGamificationPoints = async (userId, type) => {
         let newMedals = user.medals || [];
         let updated = false;
 
-        // 2. Lógica para ENVÍO de destino
         if (type === 'submission') {
             if (user.submissions_count < LIMIT_YEARLY) {
                 newPoints += POINTS_SUBMISSION;
-                // Incrementamos contador
                 await db.query('UPDATE Users SET submissions_count = submissions_count + 1 WHERE id = $1', [userId]);
                 updated = true;
 
-                // Chequear si ganó medalla (si llegó a 10 justo ahora)
                 if (user.submissions_count + 1 === LIMIT_YEARLY) {
                     const medalName = `🏅 Constancia ${new Date().getFullYear()}`;
                     newMedals.push({ name: medalName, value: MEDAL_VALUE, date: new Date() });
@@ -68,15 +108,12 @@ const addGamificationPoints = async (userId, type) => {
             }
         }
 
-        // 3. Lógica para APROBACIÓN de destino
         if (type === 'approval') {
             if (user.approvals_count < LIMIT_YEARLY) {
                 newPoints += POINTS_APPROVAL;
-                // Incrementamos contador
                 await db.query('UPDATE Users SET approvals_count = approvals_count + 1 WHERE id = $1', [userId]);
                 updated = true;
 
-                // Chequear si ganó medalla
                 if (user.approvals_count + 1 === LIMIT_YEARLY) {
                     const medalName = `🌟 Calidad ${new Date().getFullYear()}`;
                     newMedals.push({ name: medalName, value: MEDAL_VALUE, date: new Date() });
@@ -85,7 +122,6 @@ const addGamificationPoints = async (userId, type) => {
             }
         }
 
-        // 4. Guardar cambios si hubo puntos nuevos o medallas
         if (updated) {
             await db.query(
                 'UPDATE Users SET puntuaciontotal = $1, medals = $2 WHERE id = $3',
@@ -101,21 +137,21 @@ const addGamificationPoints = async (userId, type) => {
     }
 };
 
-// Función para REINICIAR TEMPORADA (Se llama cada 6 meses)
+/**
+ * Reinicia la temporada para todos los usuarios.
+ * Recalcula la puntuación base sumando el valor de las medallas históricas y resetea contadores anuales.
+ * @returns {Promise<Object>} Resultado del proceso.
+ */
 const resetSeason = async () => {
     try {
-        // 1. Obtener todos los usuarios
         const { rows: users } = await db.query('SELECT id, medals FROM Users');
 
-        // 2. Recalcular puntos base (solo suman las medallas)
         for (const user of users) {
             let basePoints = 0;
             if (user.medals && Array.isArray(user.medals)) {
-                // Sumamos el valor de todas sus medallas ganadas históricamente
                 basePoints = user.medals.reduce((sum, medal) => sum + (medal.value || 0), 0);
             }
 
-            // 3. Resetear: Puntos = base medallas, Contadores anuales = 0
             await db.query(
                 'UPDATE Users SET puntuaciontotal = $1, submissions_count = 0, approvals_count = 0 WHERE id = $2',
                 [basePoints, user.id]
@@ -128,12 +164,12 @@ const resetSeason = async () => {
     }
 };
 
-const getAllDestinos = async () => {
-    // Ejecuta la query que acabamos de crear
-    const { rows } = await db.query(userQuerys.getAllDestinos);
-    return rows;
+module.exports = { 
+    getAllDestinos,
+    searchDestinos, 
+    searchUsers,
+    postReview, 
+    sugerirDestino, 
+    addGamificationPoints,
+    resetSeason
 };
-
-
-module.exports = { searchDestinos, postReview, sugerirDestino, searchUsers,searchUsers, addGamificationPoints,
-    resetSeason,getAllDestinos };
