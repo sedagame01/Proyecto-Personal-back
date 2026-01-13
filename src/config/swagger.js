@@ -1,53 +1,27 @@
-// Asegúrate de importar la librería
-const swaggerJsdoc = require('swagger-jsdoc'); 
-
+// src/swagger-completo.js - TODO hardcodeado
 const port = process.env.PORT || 4001;
 
-// Definición base (Metadata + Rutas manuales)
-const swaggerDefinition = {
+const swaggerSpec = {
   openapi: '3.0.0',
   info: {
     title: 'API Destinos Turísticos - Documentación Completa',
     version: '1.0.0',
-    description: 'Documentación combinada (Manual + JSDoc)'
+    description: 'Todas las rutas documentadas manualmente'
   },
   servers: [
     {
       url: `http://localhost:${port}`,
       description: 'Servidor local'
-    },
-    {
-      url: 'https://proyecto-personal-back.onrender.com',
-      description: 'Servidor Producción'
     }
   ],
-  components: {
-    securitySchemes: {
-      bearerAuth: {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        description: 'Introduce el token: Bearer {token}'
-      }
-    },
-    // NOTA: He movido tus schemas manuales aquí, pero ten cuidado,
-    // ya que en user.route.js también defines 'Usuario' y 'Destino'.
-    // Swagger intentará fusionarlos o uno sobrescribirá al otro.
-    schemas: {
-      UsuarioManual: { // Renombrado para evitar conflicto con el JSDoc de user.route.js
-        type: 'object',
-        properties: {
-          id: { type: 'string', format: 'uuid' },
-          nombre: { type: 'string' },
-          email: { type: 'string', format: 'email' },
-          rol: { type: 'string', enum: ['user', 'admin', 'moderator'] }
-        }
-      }
-    }
-  },
-  // Aquí pegamos tus rutas manuales (Auth, Admin, etc.)
+  tags: [
+    { name: 'Autenticación', description: 'Login y registro' },
+    { name: 'Usuarios', description: 'Gestión de usuarios' },
+    { name: 'Destinos', description: 'Destinos turísticos' },
+    { name: 'Admin', description: 'Administración' }
+  ],
   paths: {
-    // ========== AUTH (Hardcodeado) ==========
+    // ========== AUTH ==========
     '/signup': {
       post: {
         tags: ['Autenticación'],
@@ -62,7 +36,7 @@ const swaggerDefinition = {
                 properties: {
                   nombre: { type: 'string', example: 'Juan Pérez' },
                   email: { type: 'string', format: 'email', example: 'juan@example.com' },
-                  contrasenia: { type: 'string', format: 'password', minLength: 6 }
+                  contrasenia: { type: 'string', format: 'password', minLength: 6, example: 'password123' }
                 }
               }
             }
@@ -99,23 +73,199 @@ const swaggerDefinition = {
         }
       }
     },
-    // ... (Puedes dejar aquí el resto de tus rutas Admin hardcodeadas) ...
+    '/renew': {
+      get: {
+        tags: ['Autenticación'],
+        summary: 'Renovar token JWT',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'Token renovado' }
+        }
+      }
+    },
+    
+    // ========== ADMIN ==========
+    '/admin/users': {
+      get: {
+        tags: ['Admin'],
+        summary: 'Obtener todos los usuarios',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { 
+            description: 'Lista de usuarios',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/Usuario' }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    '/admin/users/{id}': {
+      get: {
+        tags: ['Admin'],
+        summary: 'Obtener usuario por ID',
+        security: [{ bearerAuth: [] }],
+        parameters: [{
+          name: 'id',
+          in: 'path',
+          required: true,
+          schema: { type: 'string' }
+        }],
+        responses: {
+          '200': { description: 'Usuario encontrado' }
+        }
+      },
+      put: {
+        tags: ['Admin'],
+        summary: 'Actualizar usuario',
+        security: [{ bearerAuth: [] }],
+        parameters: [{
+          name: 'id',
+          in: 'path',
+          required: true,
+          schema: { type: 'string' }
+        }],
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  nombre: { type: 'string' },
+                  email: { type: 'string', format: 'email' }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          '200': { description: 'Usuario actualizado' }
+        }
+      },
+      delete: {
+        tags: ['Admin'],
+        summary: 'Eliminar usuario',
+        security: [{ bearerAuth: [] }],
+        parameters: [{
+          name: 'id',
+          in: 'path',
+          required: true,
+          schema: { type: 'string' }
+        }],
+        responses: {
+          '204': { description: 'Usuario eliminado' }
+        }
+      }
+    },
+    '/admin/users/role/{id}': {
+      put: {
+        tags: ['Admin'],
+        summary: 'Cambiar rol de usuario',
+        security: [{ bearerAuth: [] }],
+        parameters: [{
+          name: 'id',
+          in: 'path',
+          required: true,
+          schema: { type: 'string' }
+        }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['rol'],
+                properties: {
+                  rol: { type: 'string', enum: ['user', 'admin', 'moderator'] }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          '200': { description: 'Rol actualizado' }
+        }
+      }
+    },
+    
+    // ========== DESTINOS ADMIN ==========
+    '/admin/destinations/all': {
+      get: {
+        tags: ['Admin'],
+        summary: 'Obtener todos los destinos',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'Lista de destinos' }
+        }
+      }
+    },
+    '/admin/destinations/pending': {
+      get: {
+        tags: ['Admin'],
+        summary: 'Destinos pendientes',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'Destinos pendientes de aprobación' }
+        }
+      }
+    },
+    '/admin/categories': {
+      get: {
+        tags: ['Admin'],
+        summary: 'Obtener categorías',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'Lista de categorías' }
+        }
+      }
+    },
+    
+    // Agrega más rutas según necesites...
+  },
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Introduce el token: Bearer {token}'
+      }
+    },
+    schemas: {
+      Usuario: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          nombre: { type: 'string' },
+          email: { type: 'string', format: 'email' },
+          rol: { type: 'string', enum: ['user', 'admin', 'moderator'] },
+          fotoPerfil: { type: 'string' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' }
+        }
+      },
+      Destino: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          nombre: { type: 'string' },
+          descripcion: { type: 'string' },
+          pais: { type: 'string' },
+          ciudad: { type: 'string' },
+          categoria: { type: 'string' },
+          estado: { type: 'string', enum: ['aprobado', 'pendiente', 'rechazado'] },
+          temporada: { type: 'string', enum: ['alta', 'media', 'baja'] }
+        }
+      }
+    }
   }
 };
 
-// Opciones para swagger-jsdoc
-const options = {
-  swaggerDefinition,
-  // IMPORTANTE: Aquí indicamos dónde buscar los comentarios @swagger
-  // Ajusta la ruta según tu estructura de carpetas real
-  apis: [
-    './routes/*.js',       // Si tus rutas están en la raíz/routes
-    './src/routes/*.js',   // Si usas src
-    './controllers/*.js'   // A veces se documenta en controladores
-  ], 
-};
 
-// Generar la especificación dinámica
-const swaggerSpec = swaggerJsdoc(options);
 
 module.exports = swaggerSpec;
