@@ -44,6 +44,7 @@ app.use(cors(corsOptions));
 
 //MIDDLEWARE
 app.use(express.json())
+
 app.use(express.urlencoded({ extended: true }))
 
 app.use(express.static(__dirname + '/public'))
@@ -53,6 +54,7 @@ app.use('/admin', require('./routes/admin.route'));
 app.use('/user',require('./routes/user.route'));
 app.use('/',require('./routes/auth.routes'));
 app.use('/moderator', require('./routes/admin.route'));
+
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();

@@ -1,4 +1,5 @@
 const { Router } = require('express');
+const {upload} = require("../middlewares/upload");
 const { 
     buscarDestino, 
     crearReview, 
@@ -34,7 +35,7 @@ router.get('/destinos/detalle/:id', getDestinoDetalle);
 
 // Rutas protegidas (Necesitan Token)
 router.post('/review', validarJWT, crearReview); 
-router.post('/sugerir', validarJWT, sugerirNuevoDestino);
+router.post('/sugerir', [validarJWT,upload.single('file')], sugerirNuevoDestino);
 router.put('/profile', validarJWT, actualizarPerfil);
 router.put('/usuarios/:id', validarJWT, actualizarPerfil);
 router.delete('/destinos/:id', validarJWT, deleteUserDestino); 

@@ -1,6 +1,7 @@
 const userModel = require('../models/user.model.js');
 const db = require('../config/db.js');
 const { userQuerys } = require('../models/user.querys.js');
+const { saveImage } = require("../middlewares/upload");
 
 // 1. BUSCADOR (usuarios y destinos)
 const buscarDestino = async (req, res) => {
@@ -40,6 +41,12 @@ const sugerirNuevoDestino = async (req, res) => {
     try {
         const userId = req.userToken.uid; 
         if (!userId) return res.status(401).json({ ok: false, msg: "Usuario no identificado" });
+
+        if (req.file){
+            const imgUrl=saveImage(req.file);
+            req.body.images=[imgUrl];
+            
+        }
 
         const data = await userModel.sugerirDestino(req.body, userId);
         
