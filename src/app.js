@@ -11,26 +11,29 @@ const app = express()
 const port = process.env.PORT||4001;
 console.log(port)
 
-//CUIDADO EN LA WHITELIST HAY QUE AÑADIR EL PUERTO QUE LLAMA DESDE EL FRONT
 var whitelist = [
+  
   "https://proyecto-personal-front.onrender.com", 
   "https://proyecto-personal-back.onrender.com", 
   `http://localhost:${port}`, 
   "http://localhost:3000",
   "http://127.0.0.1:3001",
-  "http://localhost:5173"
+  "http://localhost:5173",
+  'https://cdn.esm.sh/react-leaflet/TileLayer',
+  'https://cdn.esm.sh/react-leaflet/MapContainer'
+
 ];
 
 var corsOptions = {
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // Postman o server-side requests
+    if (!origin) return callback(null, true); 
     if (whitelist.includes(origin)) {
       return callback(null, true);
     }
     console.log("Origin bloqueado:", origin);
     callback(new Error("Not allowed by CORS"));
   },
-  credentials: true, // <--- importante para cookies
+  credentials: true, 
 };
 app.use(cors(corsOptions));
 
@@ -49,6 +52,7 @@ app.use(express.static(__dirname + '/public'))
 app.use('/admin', require('./routes/admin.route'));
 app.use('/user',require('./routes/user.route'));
 app.use('/',require('./routes/auth.routes'));
+app.use('/moderator', require('./routes/admin.route'));
 
 
 

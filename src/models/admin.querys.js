@@ -116,6 +116,11 @@ const queries = {
         JOIN Users u ON r."userId" = u.id
         WHERE r."targetId" = $1 AND r."targetType" = 'destination'
         ORDER BY r.created_at DESC
+    `,
+    rejectDestino: `
+        UPDATE Destinations 
+        SET status = 'rejected'
+        WHERE id = $1
     `
 };
 

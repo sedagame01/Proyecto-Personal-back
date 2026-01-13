@@ -11,7 +11,9 @@ const {
     getUserReviews,
     deleteUserDestino,
     getDestinoDetalle,
-    resetearTemporada      
+    resetearTemporada,
+    updateDestinoUsuario,
+    getAllDestinos      
 } = require('../controllers/user.controllers.js');
 
 const { validarJWT } = require('../middlewares/validarToken.js'); 
@@ -37,5 +39,8 @@ router.put('/profile', validarJWT, actualizarPerfil);
 router.put('/usuarios/:id', validarJWT, actualizarPerfil);
 router.delete('/destinos/:id', validarJWT, deleteUserDestino); 
 router.post('/admin/reset-season', validarJWT, resetearTemporada);
+router.put('/destinations/:id', updateDestinoUsuario);
+router.get('/destinos', getAllDestinos);
+
 
 module.exports = router;

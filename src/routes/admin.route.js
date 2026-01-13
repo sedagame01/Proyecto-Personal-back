@@ -12,7 +12,9 @@ const {
     updateDestino,
     updateUser,
     getAllDestinos,
-    deleteDestino
+    deleteDestino,
+    rejectDestino,
+    
 } = require('../controllers/admin.controllers.js');
 
 // RUTAS PARA LAS COSAS DF USUARIOS
@@ -30,6 +32,8 @@ router.patch('/destinations/approve/:id', approveDestino);
 router.delete('/destinations/reject/:id', deleteDestino); 
 router.delete('/reviews/:id', deleteReview)
 router.put('/destinations/:id', updateDestino);
+router.patch('/destinations/reject/:id', rejectDestino);
+
 
 
 module.exports = router;

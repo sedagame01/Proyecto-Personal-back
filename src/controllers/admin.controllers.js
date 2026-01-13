@@ -44,11 +44,11 @@ const changeRole = async (req, res) => {
 const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { username, email } = req.body;
+        const { username, email , role} = req.body;
 
         const { rowCount } = await db.query(
-            'UPDATE Users SET username = $1, email = $2 WHERE id = $3',
-            [username, email, id]
+            'UPDATE Users SET username = $1, email = $2, role = $3 WHERE id = $4',
+            [username, email, role, id]
         );
 
         if (rowCount === 0) return sendError(res, 'Usuario no encontrado', 404);
@@ -101,6 +101,38 @@ const approveDestino = async (req, res) => {
         sendError(res, 'Error al aprobar destino');
     }
 };
+
+
+//regresar a pendinte destino
+
+const rejectDestino = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // 1. RECHAZAR EL DESTINO
+        const { rowCount } = await db.query(queries.rejectDestino, [id]);
+
+        if (rowCount === 0) {
+            return sendError(res, 'Destino no encontrado', 404);
+        }
+
+        // 2. GAMIFICACIÓN: Buscar creador
+        const { rows } = await db.query('SELECT createdby FROM Destinations WHERE id = $1', [id]);
+        const creatorId = rows[0]?.createdby;
+
+        if (creatorId) {
+            // Restar puntos y logros
+            await userModel.addGamificationPoints(creatorId, 'rejection');
+            console.log(`[GAMIFICATION] Puntos restados al usuario ${creatorId} por rechazo.`);
+        }
+
+        sendOk(res, null, 'Destino rechazado y puntos restados al creador');
+    } catch (error) {
+        console.error('Error en rejectDestino:', error); 
+        sendError(res, 'Error al rechazar destino');
+    }
+};
+
 
 // obtener todos los destinos 
 const getAllDestinos = async (_, res) => {
@@ -207,5 +239,6 @@ module.exports = {
     deleteReview,
     deleteDestino,
     getCategories,
-    updateDestino
+    updateDestino,
+    rejectDestino
 };

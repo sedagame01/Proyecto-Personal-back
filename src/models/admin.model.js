@@ -51,10 +51,21 @@ const deleteReviewModel = async (id) => {
     }
 };
 
+const rejectDestinoModel = async (id) => {
+    try {
+        const { rows } = await db.query(queries.rejectDestino, [id]);
+        return rows[0];
+    } catch (error) {
+        console.error("Error en rejectDestinoModel:", error);
+        throw error;
+    }
+};
+
 module.exports = {
     getAllUsersModel,
     changeRoleModel,
     getPendientesModel,
     approveDestinoModel,
-    deleteReviewModel
-};
+    deleteReviewModel,
+    rejectDestinoModel
+};  

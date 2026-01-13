@@ -41,10 +41,8 @@ const sugerirNuevoDestino = async (req, res) => {
         const userId = req.userToken.uid; 
         if (!userId) return res.status(401).json({ ok: false, msg: "Usuario no identificado" });
 
-        // 1. Crear el destino usando el modelo
         const data = await userModel.sugerirDestino(req.body, userId);
         
-        // 2. MAGIA: Sumar puntos por envío (+10 si aplica)
         await userModel.addGamificationPoints(userId, 'submission');
 
         return res.status(201).json({ ok: true, data });
@@ -204,6 +202,37 @@ const resetearTemporada = async (req, res) => {
     }
 };
 
+const updateDestinoUsuario = async (req, res) => {
+    try {
+        const { rowCount } = await db.query(
+            queries.updateDestino,
+            [
+                req.body.name,
+                req.body.description,
+                req.body.province,
+                req.body.images,
+                req.body.is_public,
+                req.params.id
+            ]
+        );
+        if (!rowCount) return sendError(res, 'Destino no encontrado', 404);
+        sendOk(res, null, 'Destino actualizado');
+    } catch (error) {
+        console.error('Error en updateDestino:', error);
+        sendError(res, 'Error al actualizar destino');
+    }
+};
+
+const getAllDestinos = async (req, res) => {
+    try {
+        const data = await userModel.getAllDestinos();
+        return res.status(200).json({ ok: true, data });
+    } catch (error) {
+        console.error("Error al obtener todos los destinos:", error);
+        return res.status(500).json({ ok: false, msg: "Error del servidor" });
+    }
+};
+
 module.exports = { 
     buscarDestino, 
     crearReview, 
@@ -216,5 +245,7 @@ module.exports = {
     getUserReviews,
     deleteUserDestino,
     getDestinoDetalle,
-    resetearTemporada
+    resetearTemporada,
+    updateDestinoUsuario,
+    getAllDestinos
 };

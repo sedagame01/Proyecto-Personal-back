@@ -13,17 +13,16 @@ const postReview = async (userId, targetId, targetType, comment, stars) => {
 
 const sugerirDestino = async (datos, userId) => {
     const { name, description, province, images, is_public } = datos;
-    const status = 'pending'; // Estado inicial
+    const status = 'pending'; 
 
-    // Importante: El orden de los elementos en el array debe coincidir con $1, $2, etc.
     const { rows } = await db.query(userQuerys.sugerirDestino, [
-        name,         // $1
-        description,  // $2
-        province,     // $3
-        images,       // $4
-        status,       // $5
-        userId,       // $6
-        is_public     // $7
+        name,         
+        description,  
+        province,     
+        images,       
+        status,       
+        userId,       
+        is_public     
     ]);
     return rows[0];
 };
@@ -129,6 +128,12 @@ const resetSeason = async () => {
     }
 };
 
+const getAllDestinos = async () => {
+    // Ejecuta la query que acabamos de crear
+    const { rows } = await db.query(userQuerys.getAllDestinos);
+    return rows;
+};
+
 
 module.exports = { searchDestinos, postReview, sugerirDestino, searchUsers,searchUsers, addGamificationPoints,
-    resetSeason };
+    resetSeason,getAllDestinos };

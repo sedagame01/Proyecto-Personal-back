@@ -69,7 +69,18 @@ const userQuerys = {
         JOIN Users u ON r."userId" = u.id
         WHERE r."targetId" = $1 AND r."targetType" = 'destination'
         ORDER BY r.created_at DESC
-    `
+    `,
+    updateDestino: `
+    UPDATE Destinations
+    SET name = $1, description = $2, province = $3, images = $4, is_public = $5
+    WHERE id = $6
+    RETURNING *
+`,
+getAllDestinos: `
+        SELECT * FROM Destinations 
+        WHERE status = 'active'
+        ORDER BY id DESC
+    `,
 };
 
 module.exports = { userQuerys };
