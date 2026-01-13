@@ -9,8 +9,10 @@ const pool = new Pool({
     max: 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 2000,
-    // SOLO activa SSL si estamos en producción
-    ssl: isProduction ? { rejectUnauthorized: false } : false
+    // Modifica esta lógica: si existe DATABASE_URL (estás en Render), usa SSL
+    ssl: process.env.DATABASE_URL 
+        ? { rejectUnauthorized: false } 
+        : false
 });
 
 pool.query('SELECT NOW()', (err, res) => {
