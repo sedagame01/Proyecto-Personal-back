@@ -3,6 +3,7 @@ const express = require("express");
 var cors = require("cors");
 const swaggerUI = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger'); 
+const path = require('path'); // ✅ AÑADIDO
 
 const app = express()
 const port = process.env.PORT || 4001;
@@ -30,7 +31,18 @@ var corsOptions = {
   },
   credentials: true, 
 };
+
 app.use(cors(corsOptions));
+
+// ✅ SERVIR ARCHIVOS ESTÁTICOS (IMÁGENES)
+app.use('/upload', express.static(path.join(__dirname, 'public/upload')));
+
+// ✅ Headers para CORS en imágenes
+app.use('/upload', (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Cache-Control', 'public, max-age=31536000');
+  next();
+});
 
 // MIDDLEWARE
 app.use(express.json())
@@ -55,16 +67,42 @@ app.get('/api-docs.json', (req, res) => {
   res.send(swaggerSpec);
 });
 
+// ✅ Ruta para probar que las imágenes funcionan
+app.get('/test-upload', (req, res) => {
+  const uploadPath = path.join(__dirname, 'public/upload');
+  fs.readdir(uploadPath, (err, files) => {
+    if (err) {
+      return res.json({ 
+        ok: false, 
+        message: 'No se pudo leer la carpeta uploads',
+        error: err.message 
+      });
+    }
+    
+    res.json({ 
+      ok: true, 
+      message: 'Servidor de imágenes funcionando',
+      uploadPath: uploadPath,
+      files: files,
+      totalFiles: files.length,
+      exampleUrl: 'https://proyecto-personal-back.onrender.com/upload/nombre-imagen.jpg'
+    });
+  });
+});
+
 // Ruta de health check
 app.get('/', (req, res) => {
   res.json({ 
     message: 'API funcionando', 
     version: '1.0.0',
+    uploads: 'Disponible en /upload',
+    frontend: 'https://proyecto-personal-front.onrender.com',
     documentation: `http://localhost:${port}/api-docs`,
     endpoints: {
       auth: '/signup, /login, /renew',
       user: '/user/*',
-      admin: '/admin/*'
+      admin: '/admin/*',
+      uploads: '/upload/* (imágenes)'
     }
   });
 });
@@ -75,8 +113,17 @@ app.use((req, res, next) => {
   next();
 });
 
+const fs = require('fs'); //  Añadir al inicio si no está
+const uploadDir = path.join(__dirname, 'public/upload');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+  console.log(` Carpeta uploads creada: ${uploadDir}`);
+}
+
 app.listen(port, () => {
-  console.log(`Servidor corriendo en puerto ${port}`);
-  console.log(` Documentación disponible en: http://localhost:${port}/api-docs`);
-  console.log(` JSON Swagger: http://localhost:${port}/api-docs.json`);
+  console.log(` Servidor corriendo en puerto ${port}`);
+  console.log(` Documentación: http://localhost:${port}/api-docs`);
+  console.log(`  Imágenes disponibles en: https://proyecto-personal-back.onrender.com/upload/`);
+  console.log(` Frontend: https://proyecto-personal-front.onrender.com`);
+  console.log(` Carpeta uploads: ${uploadDir}`);
 });

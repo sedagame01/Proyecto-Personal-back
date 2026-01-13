@@ -104,19 +104,36 @@ const sugerirNuevoDestino = async (req, res) => {
         const userId = req.userToken.uid; 
         if (!userId) return res.status(401).json({ ok: false, msg: "Usuario no identificado" });
 
-        if (req.file){
-            const imgUrl = saveImage(req.file);
-            req.body.images = [imgUrl];
+        let imageUrls = [];
+        
+        // Para múltiples archivos
+        if (req.files && req.files.length > 0) {
+            imageUrls = req.files.map(file => saveImage(file));
+        } 
+        // Para un solo archivo
+        else if (req.file) {
+            imageUrls = [saveImage(req.file)];
         }
 
+        // Si no hay imágenes, usar array vacío
+        req.body.images = imageUrls || [];
+        
         const data = await userModel.sugerirDestino(req.body, userId);
         
         await userModel.addGamificationPoints(userId, 'submission');
 
-        return res.status(201).json({ ok: true, data });
+        return res.status(201).json({ 
+            ok: true, 
+            data,
+            images: imageUrls // Opcional: devolver URLs para debug
+        });
     } catch (error) {
-        console.error("Algo falla en sugerirNuevoDestino:", error);
-        return res.status(500).json({ ok: false, msg: "Error al insertar el destino" });
+        console.error("Error en sugerirNuevoDestino:", error);
+        return res.status(500).json({ 
+            ok: false, 
+            msg: "Error al insertar el destino",
+            error: error.message 
+        });
     }
 };
 
